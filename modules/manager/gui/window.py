@@ -16,15 +16,12 @@ from PyQt5 import QtCore
 from PyQt5 import QtWidgets
 from PyQt5 import QtGui
 
-from .dashboard import DashboardWidget
-from .scanner import ScannerWidget
-
 
 class ManagerWindow(QtWidgets.QMainWindow):
     
     def __init__(self):
         super(ManagerWindow, self).__init__()
         self.setWindowTitle('AOD - monitoring wall')
-        self.resize(640, 480)    
+        self.resize(1100, 600)    
 
         self.show()

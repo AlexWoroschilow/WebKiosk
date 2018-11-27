@@ -53,6 +53,7 @@ class Application(QtWidgets.QApplication):
 
 if __name__ == "__main__":
     parser = optparse.OptionParser()
+#     DISPLAY=:0 sudo xset -dpms
 
     parser.add_option("--server", default=True, dest="server", help="Start application in server mode")
     parser.add_option("--config", default='./kiosk.conf', dest="config", help="Config file location")

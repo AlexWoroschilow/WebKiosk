@@ -33,6 +33,8 @@ class DeviceWidget(QtWidgets.QWidget):
     @inject.params(manager='grpc_client_manager')    
     def __init__(self, host, manager=None):
         super(DeviceWidget, self).__init__()
+        self.thread = DeviceThread(manager)
+
         self.host = host
 
         self.layout = QtWidgets.QGridLayout()
@@ -58,46 +60,58 @@ class DeviceWidget(QtWidgets.QWidget):
         
         self.pixmap = QtGui.QPixmap('img/progress.jpg')
         self.image = QtWidgets.QLabel()
-        self.image.setPixmap(self.pixmap.scaled(self.width(), self.height()))
+        self.image.setPixmap(self.pixmap.scaled(self.width(), self.height(), Qt.KeepAspectRatio))
 
         scrollArea = QtWidgets.QScrollArea()
         scrollArea.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        scrollArea.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)        
+        scrollArea.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         scrollArea.setWidget(self.image)
 
         self.layout.addWidget(scrollArea, 1, 0, 1, 7)
 
-        client = manager.instance(self.host, '50051')
-        status = client.status()
+        self.thread.status.connect(self.status) 
+        self.thread.start(self.host)
+
+    def status(self, status=None):
         if status is None:
             return None
-        
-        self.url.setText(status.url)
-        self.screeshot(status.screenshot)
 
-    def screeshot(self, screenshot=None):
-        if screenshot is None:
-            return None
-        
-        self.pixmap.loadFromData(screenshot.data)
-        self.image.setPixmap(self.pixmap.scaled(self.width(), self.height()))
+        self.url.setText(status.url)
+        self.pixmap.loadFromData(status.screenshot.data)
+        self.image.setPixmap(self.pixmap.scaled(self.width(), self.height(), Qt.KeepAspectRatio))
         self.image.resize(self.width(), self.height())
 
     def resizeEvent(self, event):
-        self.image.setPixmap(self.pixmap.scaled(self.width(), self.height()))
+        self.image.setPixmap(self.pixmap.scaled(self.width(), self.height(), Qt.KeepAspectRatio))
         self.image.resize(self.width(), self.height())
 
     @inject.params(manager='grpc_client_manager')
     def onActionUrlSend(self, event=None, manager=None):
-        client = manager.instance(self.host, '50051')
         if not len(self.url.text()):
             return None
-        client.url(self.url.text())
-        self.screeshot(client.screenshot())
+        client = manager.instance(self.host, 50051)
+        self.status(client.url(self.url.text()))
 
-    @inject.params(manager='grpc_client_manager')
-    def onActionRefresh(self, event, manager):
-        client = manager.instance(self.host, '50051')
-        self.screeshot(client.screenshot())
+    def onActionRefresh(self, event=None):
+        self.thread.start(self.host)
 
+
+class DeviceThread(QtCore.QThread):
+
+    status = QtCore.pyqtSignal(object)
+
+    def __init__(self, manager):
+        super(DeviceThread, self).__init__()
+        self.manager = manager
+        self.hosts = None
+        self.port = 50051
+
+    def start(self, host=None):
+        self.host = host
+        super(DeviceThread, self).start()
+        
+    def run(self):
+        client = self.manager.instance(self.host, self.port)
+        if client is not None and client:
+            self.status.emit(client.status())
 

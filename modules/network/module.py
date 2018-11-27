@@ -31,10 +31,15 @@ class Loader(Loader):
         return True
 
     def config(self, binder=None):
+        binder.bind_to_constructor('network_scanner.service', self.__service)
         binder.bind_to_constructor('network_scanner', self.__thread)
  
-    def __thread(self):
-        return ScannerThread()
+    def __service(self):
+        return NetworkScanner()
+
+    @inject.params(scanner='network_scanner.service')
+    def __thread(self, scanner):
+        return ScannerThread(scanner)
 
 
 class ScannerThread(QtCore.QThread):
@@ -44,9 +49,9 @@ class ScannerThread(QtCore.QThread):
     closed = QtCore.pyqtSignal(object)
     open = QtCore.pyqtSignal(object)
 
-    def __init__(self):
+    def __init__(self, scanner):
         super(ScannerThread, self).__init__()
-        self.scanner = NetworkScanner()
+        self.scanner = scanner
         self.network = None
         self.ports = None
 

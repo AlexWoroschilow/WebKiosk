@@ -38,51 +38,64 @@ class KioskClient(object):
         self.server = server
         self.port = port
 
-    @inject.params(config='config')
-    def ping(self, config=None):
-        with grpc.insecure_channel('{}:{}'.format(self.server, self.port)) as channel:
-            stub = kiosk_pb2_grpc.KioskStub(channel)
-            return stub.ping(kiosk_pb2.Ping(
-                name='localhost',
-                data='test',
-                ip='10.42.0.1',
-            ))
+    @inject.params(logger='logger')
+    def ping(self, logger=None):
+        try:
+            with grpc.insecure_channel('{}:{}'.format(self.server, self.port)) as channel:
+                stub = kiosk_pb2_grpc.KioskStub(channel)
+                return stub.ping(kiosk_pb2.Ping(
+                    name='localhost',
+                    data='test',
+                    ip='10.42.0.1',
+                ))
+        except grpc._channel._Rendezvous:
+            logger.error('Server unavailable: {}:{}'.format(self.server, self.port))
         return None
 
-    @inject.params(config='config')
-    def screenshot(self, config=None):
-        with grpc.insecure_channel('{}:{}'.format(self.server, self.port)) as channel:
-            stub = kiosk_pb2_grpc.KioskStub(channel)
-            return stub.screenshot(kiosk_pb2.Request(
-                auth=config.get('security.code'),
-                command=kiosk_pb2.Command(
-                    data='',
-                    code=''
-                ) 
-            ))
-
-    @inject.params(config='config')
-    def status(self, config=None):
-        with grpc.insecure_channel('{}:{}'.format(self.server, self.port)) as channel:
-            stub = kiosk_pb2_grpc.KioskStub(channel)
-            return stub.status(kiosk_pb2.Request(
-                auth=config.get('security.code'),
-                command=kiosk_pb2.Command(
-                    data='', code=''
-                ) 
-            ))
+    @inject.params(config='config', logger='logger')
+    def screenshot(self, config=None, logger=None):
+        try:
+            with grpc.insecure_channel('{}:{}'.format(self.server, self.port)) as channel:
+                stub = kiosk_pb2_grpc.KioskStub(channel)
+                return stub.screenshot(kiosk_pb2.Request(
+                    auth=config.get('security.code'),
+                    command=kiosk_pb2.Command(
+                        data='',
+                        code=''
+                    ) 
+                ))
+        except grpc._channel._Rendezvous:
+            logger.error('Server unavailable: {}:{}'.format(self.server, self.port))
         return None
 
-    @inject.params(config='config')
-    def url(self, url=None, config=None):
-        with grpc.insecure_channel('{}:{}'.format(self.server, self.port)) as channel:
-            stub = kiosk_pb2_grpc.KioskStub(channel)
-            return stub.command(kiosk_pb2.Request(
-                auth=config.get('security.code'),
-                command=kiosk_pb2.Command(
-                    code='url', data=url
-                ) 
-            ))
+    @inject.params(config='config', logger='logger')
+    def status(self, config=None, logger=None):
+        try:
+            with grpc.insecure_channel('{}:{}'.format(self.server, self.port)) as channel:
+                stub = kiosk_pb2_grpc.KioskStub(channel)
+                return stub.status(kiosk_pb2.Request(
+                    auth=config.get('security.code'),
+                    command=kiosk_pb2.Command(
+                        data='', code=''
+                    ) 
+                ))
+        except grpc._channel._Rendezvous:
+            logger.error('Server unavailable: {}:{}'.format(self.server, self.port))
+        return None
+
+    @inject.params(config='config', logger='logger')
+    def url(self, url=None, config=None, logger=None):
+        try:
+            with grpc.insecure_channel('{}:{}'.format(self.server, self.port)) as channel:
+                stub = kiosk_pb2_grpc.KioskStub(channel)
+                return stub.command(kiosk_pb2.Request(
+                    auth=config.get('security.code'),
+                    command=kiosk_pb2.Command(
+                        code='url', data=url
+                    ) 
+                ))
+        except grpc._channel._Rendezvous:
+            logger.error('Server unavailable: {}:{}'.format(self.server, self.port))
         return None
 
 

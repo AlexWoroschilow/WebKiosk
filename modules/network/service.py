@@ -15,6 +15,7 @@ import time
 
 import socket
 import errno
+from socket import gethostbyname, gaierror
 
 
 class NetworkScanner(object):
@@ -33,15 +34,26 @@ class NetworkScanner(object):
     def resume(self):
         self._pause = False
         self._stop = False
+
+    def open(self, host=None, port=None):
+        if host is None or port is None:
+            return None
+        try:
+            socket_obj = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            socket.setdefaulttimeout(1)
+    
+            response = socket_obj.connect_ex((host, int(port)))
+            socket_obj.close()
+            return (response == 0)
+        except gaierror:
+            return False
+        return False
     
     def scan(self, network='192.168.1.0/24', ports=None):
         self._pause = False
         self._stop = False
         if ports is None or not ports:
-            ports = [
-                ('ssh', 22), ('http', 80),
-                ('https', 443), ('grcp', 50051)
-            ]
+            ports = [('ssh', 22), ('grcp', 50051), ('x11vnc', 5900)]
 
         for ip_address in IPy.IP(network):
 

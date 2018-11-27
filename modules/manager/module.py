@@ -13,10 +13,11 @@
 import inject
 import functools
 
+from PyQt5 import QtWidgets
+
 from lib.plugin import Loader
 
 from .gui.window import ManagerWindow 
-from .gui.button import ButtonFlat
 
 
 class Loader(Loader):
@@ -31,28 +32,22 @@ class Loader(Loader):
         binder.bind_to_provider('manager_dashboard', self.__dashboard)
         binder.bind_to_provider('manager_device', self.__device)
  
-    @inject.params(widget='manager_dashboard')
-    def __window(self, widget=None):
+    @inject.params(widget1='manager_scanner', widget2='manager_dashboard')
+    def __window(self, widget1=None, widget2=None):
 
         window = ManagerWindow()
-        window.setCentralWidget(widget)
+
+        container = QtWidgets.QSplitter()
+        window.setCentralWidget(container)
+
+        widget1.open.connect(functools.partial(self.onActionHostOpen, window=window))
+        widget1.save.connect(functools.partial(self.onActionHostSave, window=window))
         
-        action = functools.partial(self.onActionHostOpen, window=window)
-        widget.open.connect(action)
-        action = functools.partial(self.onActionHostSave, window=window)
-        widget.save.connect(action)
+        widget2.open.connect(functools.partial(self.onActionHostOpen, window=window))
+        widget2.save.connect(functools.partial(self.onActionHostSave, window=window))
 
-        scanner = ButtonFlat('Scanner')
-        window.statusBar().addWidget(scanner)
-        scanner.clicked.connect(functools.partial(
-            self.onActionScaner, window=window
-        ))
-
-        dashboard = ButtonFlat('Dashboard')
-        window.statusBar().addWidget(dashboard)
-        dashboard.clicked.connect(functools.partial(
-            self.onActionDashboard, window=window
-        ))
+        container.addWidget(widget1)
+        container.addWidget(widget2)
 
         return window
     
@@ -86,32 +81,25 @@ class Loader(Loader):
     def onActionHostOpen(self, data, manager, window):
         widget = manager.instance(data)
         window.setCentralWidget(widget)
-        widget.back.connect(functools.partial(
-            self.onActionDashboard, window=window
-        ))
+        widget.back.connect(functools.partial(self.onActionDashboard, window=window))
 
     def onActionHostSave(self, data, window):
         print(data, window)
 
-    @inject.params(widget='manager_scanner')
-    def onActionScaner(self, event=None, widget=None, window=None):
+    @inject.params(widget1='manager_scanner', widget2='manager_dashboard')
+    def onActionDashboard(self, window, widget1=None, widget2=None):
+
+        container = QtWidgets.QSplitter()
+        window.setCentralWidget(container)
+
+        widget1.open.connect(functools.partial(self.onActionHostOpen, window=window))
+        widget1.save.connect(functools.partial(self.onActionHostSave, window=window))
         
-        action = functools.partial(self.onActionHostOpen, window=window)
-        widget.open.connect(action)
-        action = functools.partial(self.onActionHostSave, window=window)
-        widget.save.connect(action)
-        action = functools.partial(self.onActionDashboard, window=window)
-        widget.back.connect(action)
+        widget2.open.connect(functools.partial(self.onActionHostOpen, window=window))
+        widget2.save.connect(functools.partial(self.onActionHostSave, window=window))
 
-        window.setCentralWidget(widget)
+        container.addWidget(widget1)
+        container.addWidget(widget2)
 
-    @inject.params(widget='manager_dashboard')
-    def onActionDashboard(self, event=None, widget=None, window=None):
-        
-        action = functools.partial(self.onActionHostOpen, window=window)
-        widget.open.connect(action)
-        action = functools.partial(self.onActionHostSave, window=window)
-        widget.save.connect(action)
-
-        window.setCentralWidget(widget)
+        return window
 

@@ -13,7 +13,6 @@
 import inject
 
 from lib.plugin import Loader
-from .gui.webview import KioskWebView
 
 
 class Loader(Loader):
@@ -30,6 +29,8 @@ class Loader(Loader):
         
     @inject.params(config='config')
     def __constructor(self, config=None):
+        from .gui.webview import KioskWebView
+        
         destination = config.get('browser.cookies')
         return KioskWebView(destination)
         
