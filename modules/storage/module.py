@@ -14,6 +14,8 @@ import inject
 
 from lib.plugin import Loader
 
+from .service import ServiceStorage
+
 
 class Loader(Loader):
 
@@ -22,5 +24,8 @@ class Loader(Loader):
         return True
 
     def config(self, binder=None):
-        binder.bind('storage', None)
+        binder.bind_to_constructor('storage', self._constructor)
+        
+    def _constructor(self):
+        return ServiceStorage()
  

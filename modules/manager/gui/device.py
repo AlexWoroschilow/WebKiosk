@@ -30,8 +30,8 @@ class DeviceWidget(QtWidgets.QWidget):
 
     back = QtCore.pyqtSignal()
 
-    @inject.params(manager='grpc_client_manager')    
-    def __init__(self, host, manager=None):
+    @inject.params(manager='grpc_client_manager', window='manager')    
+    def __init__(self, host, manager=None, window=None):
         super(DeviceWidget, self).__init__()
         self.thread = DeviceThread(manager)
 
@@ -59,6 +59,13 @@ class DeviceWidget(QtWidgets.QWidget):
         self.layout.addWidget(button, 0, 6, 1, 1)
         
         self.pixmap = QtGui.QPixmap('img/progress.jpg')
+        if self.host.screenshot is not None and self.host.screenshot:
+            self.pixmap.loadFromData(QtCore.QByteArray().fromRawData(self.host.screenshot))
+            if window is not None and window:
+                width = self.pixmap.width()
+                height = self.pixmap.height()
+                window.resize(width, height)
+            
         self.image = QtWidgets.QLabel()
         self.image.setPixmap(self.pixmap.scaled(self.width(), self.height(), Qt.KeepAspectRatio))
 
@@ -72,12 +79,21 @@ class DeviceWidget(QtWidgets.QWidget):
         self.thread.status.connect(self.status) 
         self.thread.start(self.host)
 
-    def status(self, status=None):
+    @inject.params(storage='storage', window='manager')
+    def status(self, status=None, storage=None, window=None):
         if status is None:
             return None
+        
+        self.host.screenshot = status.screenshot.data
+        storage.update(self.host)
 
         self.url.setText(status.url)
-        self.pixmap.loadFromData(status.screenshot.data)
+        self.pixmap.loadFromData(self.host.screenshot)
+        if window is not None and window:
+            width = self.pixmap.width()
+            height = self.pixmap.height()
+            window.resize(width, height)
+        
         self.image.setPixmap(self.pixmap.scaled(self.width(), self.height(), Qt.KeepAspectRatio))
         self.image.resize(self.width(), self.height())
 
@@ -111,7 +127,7 @@ class DeviceThread(QtCore.QThread):
         super(DeviceThread, self).start()
         
     def run(self):
-        client = self.manager.instance(self.host, self.port)
+        client = self.manager.instance(self.host.ip, self.port)
         if client is not None and client:
             self.status.emit(client.status())
 

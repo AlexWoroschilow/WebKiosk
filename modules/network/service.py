@@ -48,12 +48,11 @@ class NetworkScanner(object):
         except gaierror:
             return False
         return False
-    
-    def scan(self, network='192.168.1.0/24', ports=None):
+
+    # [('ssh', 22), ('grcp', 50051), ('x11vnc', 5900)]    
+    def scan(self, network='192.168.1.0/24', ports=[('grcp', 50051)]):
         self._pause = False
         self._stop = False
-        if ports is None or not ports:
-            ports = [('ssh', 22), ('grcp', 50051), ('x11vnc', 5900)]
 
         for ip_address in IPy.IP(network):
 

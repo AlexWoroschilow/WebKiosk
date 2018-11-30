@@ -19,6 +19,13 @@ class LabelTitle(QtWidgets.QLabel):
         self.setStyleSheet("QLabel { font-size: 22px; }");
 
 
+class LabelSubtitle(QtWidgets.QLabel):
+    
+    def __init__(self, name):
+        super(LabelSubtitle, self).__init__(name)
+        self.setStyleSheet("QLabel { font-size: 18px; }");
+
+
 class LabelText(QtWidgets.QLabel):
     
     def __init__(self, name):

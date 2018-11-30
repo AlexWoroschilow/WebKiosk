@@ -28,20 +28,23 @@ class ButtonPicture(QtWidgets.QAbstractButton):
 
     def __init__(self, pixmap, parent=None):
         super(ButtonPicture, self).__init__(parent)
-        self.setMinimumHeight(200)
-        self.setMinimumWidth(300)
+        self.setMinimumHeight(150)
+        self.setMinimumWidth(200)
         
         self.pixmap = pixmap
 
     def setPixmap(self, pixmap):
         self.pixmap = pixmap
-        self.update()
+        try:
+            self.update()
+        except RuntimeError as ex:
+            print(ex)
 
     def paintEvent(self, event):
         painter = QtGui.QPainter(self)
         rect = event.rect()
-        rect.setHeight(200 if rect.height() < 200 else rect.height())
-        rect.setWidth(300 if rect.width() < 300 else rect.width())
+        rect.setHeight(150 if rect.height() < 150 else rect.height())
+        rect.setWidth(200 if rect.width() < 200 else rect.width())
         painter.drawPixmap(rect, self.pixmap)
 
     def sizeHint(self):

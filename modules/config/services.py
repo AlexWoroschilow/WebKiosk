@@ -42,7 +42,10 @@ class ConfigService(object):
 
             self._parser.add_section('scanner')
             self._parser.set('scanner', 'network', '192.168.1.0/24')
-
+            
+            self._parser.add_section('storage')
+            self._parser.set('storage', 'database', 'kiosk.db')
+            
             self._parser.write(stream)
             stream.close()
             

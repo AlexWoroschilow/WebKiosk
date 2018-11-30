@@ -78,10 +78,19 @@ class Loader(Loader):
         return DeviceWidgetManager()
 
     @inject.params(manager='manager_device')
-    def onActionHostOpen(self, data, manager, window):
-        widget = manager.instance(data)
+    def onActionHostOpen(self, host, manager, window):
+        if host is None or not host:
+            return None
+        
+        widget = manager.instance(host)
+        if widget is None or not widget:
+            return None
+        
         window.setCentralWidget(widget)
-        widget.back.connect(functools.partial(self.onActionDashboard, window=window))
+        
+        widget.back.connect(functools.partial(
+            self.onActionDashboard, window=window
+        ))
 
     def onActionHostSave(self, data, window):
         print(data, window)

@@ -20,7 +20,7 @@ from PyQt5.QtCore import Qt
 from .button import ButtonPicture
 from .button import ButtonFlat
 
-from .label import LabelText
+from .label import LabelSubtitle
 
 
 class DashboardWidget(QtWidgets.QWidget):
@@ -28,61 +28,35 @@ class DashboardWidget(QtWidgets.QWidget):
     open = QtCore.pyqtSignal(object)
     save = QtCore.pyqtSignal(object)
     
-    @inject.params(manager='grpc_client_manager')
-    def __init__(self, manager):
+    @inject.params(storage='storage')
+    def __init__(self, storage):
         super(DashboardWidget, self).__init__()
-        self.thread = DashboardThread(manager)
-        
-        self.collection = []
         
         self.layout = QtWidgets.QGridLayout()
         self.setLayout(self.layout)
 
         layout = QtWidgets.QGridLayout()
-        widget1 = QtWidgets.QWidget()
-        widget1.setLayout(layout)
+        widgetCentral = QtWidgets.QWidget()
+        widgetCentral.setLayout(layout)
 
-        for i, chunk in enumerate(self.chunks(self.hosts, 3)):
+        refresh = ButtonFlat('Refresh')
+        self.layout.addWidget(refresh, 0, 0, 1, 1)
+
+        for i, chunk in enumerate(self.chunks(storage.hosts, 3)):
             for j, host in enumerate(chunk):
                 widget = DashboardEntity(host)
+                widget.open.connect(lambda x: self.open.emit(x))
+                widget.save.connect(lambda x: self.open.emit(x))
                 layout.addWidget(widget, i, j)
-                self.collection.append((host, widget))
+                
+                refresh.clicked.connect(widget.refresh)
 
         scrollArea = QtWidgets.QScrollArea()
         scrollArea.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         scrollArea.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)        
-        scrollArea.setWidget(widget1)
+        scrollArea.setWidget(widgetCentral)
         
         self.layout.addWidget(scrollArea, 1, 0, 1, 6)
-
-        self.thread.screenshot.connect(self.screenshot) 
-        self.thread.start(self.hosts)
-
-        self.refresh = ButtonFlat('Refresh')
-        self.refresh.clicked.connect(lambda x: self.thread.start(self.hosts))
-        self.layout.addWidget(self.refresh, 0, 0, 1, 1)
-
-    @property
-    def hosts(self):
-        return [
-            '192.168.1.88',
-            '192.168.1.101',
-            '192.168.1.135',
-            '192.168.1.208',
-            '192.168.1.242',
-            '192.168.1.253',
-            '192.168.1.176',
-        ]        
-
-    def screenshot(self, data):
-        host_required, screenshot = data
-        for bunch in self.collection:
-            host, widget = bunch
-            if host not in [host_required]:
-                continue
-            widget.screeshot(screenshot)
-            widget.open.connect(lambda x: self.open.emit(x))
-            widget.save.connect(lambda x: self.open.emit(x))
 
     def chunks(self, li, n):
         if li == []:
@@ -98,44 +72,56 @@ class DashboardEntity(QtWidgets.QWidget):
     
     def __init__(self, host=None):
         super(DashboardEntity, self).__init__()
-        self.setMinimumWidth(300)
-        self.setMinimumHeight(200)
+        self.setMinimumWidth(200)
+        self.setMinimumHeight(150)
+        self.thread = DashboardEntityThread(host.ip)
+        self.thread.screenshot.connect(self.screenshot)
+
+        self.host = host
 
         self.layout = QtWidgets.QVBoxLayout()
-        self.layout.addWidget(LabelText(host))
+        self.layout.addWidget(LabelSubtitle("{} ({})".format(host.name, host.ip)))
 
         self.pixmap = QtGui.QPixmap('img/desktop.png')
-        self.button = ButtonPicture(self.pixmap.scaled(300, 200, Qt.KeepAspectRatio))
-        self.button.clicked.connect(lambda x: self.open.emit((host)))
+        if host.screenshot is not None and host.screenshot:
+            self.pixmap.loadFromData(QtCore.QByteArray().fromRawData(host.screenshot))
+        
+        self.button = ButtonPicture(self.pixmap.scaled(200, 150, Qt.KeepAspectRatio))
+        self.button.clicked.connect(lambda x: self.open.emit(host))
         self.layout.addWidget(self.button)
 
         self.setLayout(self.layout)
+        self.thread.start()
 
-    def screeshot(self, screenshot=None):
-        if screenshot is None:
+    @inject.params(storage='storage')
+    def screenshot(self, screenshot, storage=None):
+        if screenshot is None or not screenshot:
             return None
-        if screenshot.data is not None:
-            self.pixmap.loadFromData(screenshot.data)
-            self.button.setPixmap(self.pixmap.scaled(300, 200, Qt.KeepAspectRatio))
+        
+        self.host.screenshot = screenshot 
+        storage.update(self.host)
+        
+        self.pixmap.loadFromData(self.host.screenshot)
+        self.button.setPixmap(self.pixmap.scaled(200, 150, Qt.KeepAspectRatio))
+
+    def refresh(self, event=None):
+        if self.thread is not None and self.thread:
+            self.thread.start()
 
 
-class DashboardThread(QtCore.QThread):
+class DashboardEntityThread(QtCore.QThread):
 
     screenshot = QtCore.pyqtSignal(object)
 
-    def __init__(self, manager):
-        super(DashboardThread, self).__init__()
-        self.manager = manager
-
-        self.hosts = None
-        self.port = 50051
-
-    def start(self, hosts=None):
-        self.hosts = hosts
-        super(DashboardThread, self).start()
+    def __init__(self, ip):
+        super(DashboardEntityThread, self).__init__()
+        self.ip = ip
         
-    def run(self):
-        for host in self.hosts:
-            client = self.manager.instance(host, self.port)
-            if client is not None and client:
-                self.screenshot.emit((host, client.screenshot()))
+    @inject.params(manager='grpc_client_manager')
+    def run(self, manager=None):
+        client = manager.instance(self.ip, 50051)
+        if client is None or not client:
+            return None
+        screenshot = client.screenshot()
+        if screenshot is not None and screenshot:
+            self.screenshot.emit(screenshot.data)

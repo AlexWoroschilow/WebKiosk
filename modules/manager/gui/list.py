@@ -10,12 +10,11 @@
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-import functools
+import inject
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import Qt
 from PyQt5 import QtWidgets
-from PyQt5 import QtGui
 
 from .button import ButtonFlat
 from .label import LabelTitle
@@ -53,33 +52,23 @@ class HostEntity(QtWidgets.QWidget):
     open = QtCore.pyqtSignal(object)
     save = QtCore.pyqtSignal(object)
 
-    def __init__(self, response):
+    def __init__(self, host):
         super(HostEntity, self).__init__()
-        self.address, (self.name, self.port), self.status = response
 
         self.layout = QtWidgets.QGridLayout()
 
-        self.layout.addWidget(LabelTitle("{}".format(self.address)), 0, 0)
-        
-        self.protocols = HostEntityProtocol([self.name.capitalize()])
-        self.layout.addWidget(self.protocols, 1, 0)
+        self.layout.addWidget(LabelTitle("{}".format(host.name)), 0, 0)
+        self.layout.addWidget(LabelText("{}".format(host.ip)), 1, 0)
         
         button = ButtonFlat('Open')
         self.layout.addWidget(button, 0, 1)
-        button.clicked.connect(lambda x: self.open.emit(self.address))
+        button.clicked.connect(lambda x: self.open.emit(host))
 
-        button = ButtonFlat('Save')
+        button = ButtonFlat('Update')
         self.layout.addWidget(button, 1, 1)
-        button.clicked.connect(lambda x: self.save.emit(self.address))
+        button.clicked.connect(lambda x: self.save.emit(host))
 
         self.setLayout(self.layout)
-
-    def append(self, response):
-        address, (name, port), status = response
-        self.protocols.append([name.capitalize()])
-
-    def hasIp(self, address):
-        return address == self.address
 
 
 class HostList(QtWidgets.QListWidget):
@@ -88,38 +77,37 @@ class HostList(QtWidgets.QListWidget):
     open = QtCore.pyqtSignal(object)
     save = QtCore.pyqtSignal(object)
     
-    def __init__(self):
+    @inject.params(storage='storage')
+    def __init__(self, storage):
         super(HostList, self).__init__()
         self.setStyleSheet("QListWidget::item {border: none; min-height: 80px; }");
+        for host in storage.scanned:
+            self.addHost(host)
     
-    def getItemByHost(self, ip):
-        for i in range(self.count()):
-            item = self.item(i)
-            widget = item.widget
-            if widget.hasIp(ip):
-                return (item, widget) 
-        return None
-            
-    def addHost(self, host):
-        address, (name, port), status = host
-        
-        existed = self.getItemByHost(address)
-        if existed is not None:
-            item, widget = existed
-            widget.append(host)
+    def addHost(self, host=None):
+        if host is None or not host:
             return None
         
         item = QtWidgets.QListWidgetItem()
-        self.addItem(item)
-        
         item.widget = HostEntity(host)
-        item.widget.open.connect(self.onActionItemOpen)
-        item.widget.save.connect(self.onActionItemSave)
+        item.widget.open.connect(lambda x: self.open.emit(x))
+        item.widget.save.connect(self.onActionUpdate)
+
+        self.addItem(item)
 
         self.setItemWidget(item, item.widget)
 
-    def onActionItemOpen(self, event=None):
-        self.open.emit(event)
+    @inject.params(storage='storage', manager='grpc_client_manager')
+    def onActionUpdate(self, host, storage, manager):
+        client = manager.instance(host.ip)
+        if client is None or not client:
+            return None
 
-    def onActionItemSave(self, event=None):
-        self.save.emit(event)
+        screenshot = client.screenshot()
+        if screenshot is None or not screenshot:
+            return None
+        
+        host.screenshot = screenshot.data
+        storage.update(host)
+        
+        self.save.emit(host)
