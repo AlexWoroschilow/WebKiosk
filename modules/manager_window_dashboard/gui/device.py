@@ -11,11 +11,10 @@
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 import inject
-
 from PyQt5 import QtCore
-from PyQt5.QtCore import Qt
-from PyQt5 import QtWidgets
 from PyQt5 import QtGui
+from PyQt5 import QtWidgets
+from PyQt5.QtCore import Qt
 
 from .button import ButtonFlat
 
@@ -27,10 +26,9 @@ class DeviceWidgetManager(object):
 
 
 class DeviceWidget(QtWidgets.QWidget):
-
     back = QtCore.pyqtSignal()
 
-    @inject.params(manager='grpc_client_manager', window='manager')    
+    @inject.params(manager='api.client_manager', window='manager')
     def __init__(self, host, manager=None, window=None):
         super(DeviceWidget, self).__init__()
         self.thread = DeviceThread(manager)
@@ -46,18 +44,18 @@ class DeviceWidget(QtWidgets.QWidget):
         button = ButtonFlat('Back')
         button.clicked.connect(lambda x: self.back.emit())
         self.layout.addWidget(button, 0, 0, 1, 1)
-        
+
         self.url.setPlaceholderText('http://...')
         self.layout.addWidget(self.url, 0, 1, 1, 5)
-        
+
         button = ButtonFlat('Send')
         button.clicked.connect(self.onActionUrlSend)
         self.layout.addWidget(button, 0, 5, 1, 1)
-        
+
         button = ButtonFlat('Refresh')
         button.clicked.connect(self.onActionRefresh)
         self.layout.addWidget(button, 0, 6, 1, 1)
-        
+
         self.pixmap = QtGui.QPixmap('img/progress.jpg')
         if self.host.screenshot is not None and self.host.screenshot:
             self.pixmap.loadFromData(QtCore.QByteArray().fromRawData(self.host.screenshot))
@@ -65,7 +63,7 @@ class DeviceWidget(QtWidgets.QWidget):
                 width = self.pixmap.width()
                 height = self.pixmap.height()
                 window.resize(width, height)
-            
+
         self.image = QtWidgets.QLabel()
         self.image.setPixmap(self.pixmap.scaled(self.width(), self.height(), Qt.KeepAspectRatio))
 
@@ -76,24 +74,28 @@ class DeviceWidget(QtWidgets.QWidget):
 
         self.layout.addWidget(scrollArea, 1, 0, 1, 7)
 
-        self.thread.status.connect(self.status) 
+        self.thread.status.connect(self.status)
         self.thread.start(self.host)
 
     @inject.params(storage='storage', window='manager')
     def status(self, status=None, storage=None, window=None):
-        if status is None:
-            return None
-        
-        self.host.screenshot = status.screenshot.data
-        storage.update(self.host)
+        if not status: return None
 
-        self.url.setText(status.url)
+        if 'screenshot' in status.keys():
+            screenshot = status.get('screenshot')
+            self.host.screenshot = screenshot.get('picture')
+            storage.update(self.host)
+
+        if 'url' not in status.keys():
+            return None
+
+        self.url.setText(status.get('url'))
         self.pixmap.loadFromData(self.host.screenshot)
         if window is not None and window:
             width = self.pixmap.width()
             height = self.pixmap.height()
             window.resize(width, height)
-        
+
         self.image.setPixmap(self.pixmap.scaled(self.width(), self.height(), Qt.KeepAspectRatio))
         self.image.resize(self.width(), self.height())
 
@@ -101,33 +103,32 @@ class DeviceWidget(QtWidgets.QWidget):
         self.image.setPixmap(self.pixmap.scaled(self.width(), self.height(), Qt.KeepAspectRatio))
         self.image.resize(self.width(), self.height())
 
-    @inject.params(manager='grpc_client_manager')
+    @inject.params(manager='api.client_manager')
     def onActionUrlSend(self, event=None, manager=None):
         if not len(self.url.text()):
             return None
-        client = manager.instance(self.host.ip, 50051)
-        self.status(client.url(self.url.text()))
+        client = manager.instance(self.host.ip, 52312)
+        client.url(self.url.text())
+        self.status(client.status())
 
     def onActionRefresh(self, event=None):
         self.thread.start(self.host)
 
 
 class DeviceThread(QtCore.QThread):
-
     status = QtCore.pyqtSignal(object)
 
     def __init__(self, manager):
         super(DeviceThread, self).__init__()
         self.manager = manager
         self.hosts = None
-        self.port = 50051
+        self.port = 52312
 
     def start(self, host=None):
         self.host = host
         super(DeviceThread, self).start()
-        
+
     def run(self):
         client = self.manager.instance(self.host.ip, self.port)
         if client is not None and client:
             self.status.emit(client.status())
-

@@ -21,31 +21,6 @@ class ButtonFlat(QtWidgets.QPushButton):
     
     def __init__(self, name):
         super(ButtonFlat, self).__init__(name)
+        self.setMaximumWidth(80)
         self.setFlat(True)
 
-
-class ButtonPicture(QtWidgets.QAbstractButton):
-
-    def __init__(self, pixmap, parent=None):
-        super(ButtonPicture, self).__init__(parent)
-        self.setMinimumHeight(150)
-        self.setMinimumWidth(200)
-        
-        self.pixmap = pixmap
-
-    def setPixmap(self, pixmap):
-        self.pixmap = pixmap
-        try:
-            self.update()
-        except RuntimeError as ex:
-            print(ex)
-
-    def paintEvent(self, event):
-        painter = QtGui.QPainter(self)
-        rect = event.rect()
-        rect.setHeight(150 if rect.height() < 150 else rect.height())
-        rect.setWidth(200 if rect.width() < 200 else rect.width())
-        painter.drawPixmap(rect, self.pixmap)
-
-    def sizeHint(self):
-        return self.pixmap.size()

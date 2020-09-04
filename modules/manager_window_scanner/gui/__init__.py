@@ -10,24 +10,3 @@
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-import inject
-
-from lib.plugin import Loader
-
-
-class Loader(Loader):
-
-    @property
-    def enabled(self):
-        if hasattr(self._options, 'server'):
-            return self._options.server
-        return False
-
-    def config(self, binder=None):
-        binder.bind_to_constructor('browser', self.__constructor)
-
-    @inject.params(config='config')
-    def __constructor(self, config=None):
-        from .gui.webview import KioskWebView
-
-        return KioskWebView()

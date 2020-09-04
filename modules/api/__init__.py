@@ -10,8 +10,8 @@
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-import inject
 
+import inject
 
 class Loader(object):
 
@@ -21,16 +21,16 @@ class Loader(object):
     def __exit__(self, type, value, traceback):
         pass
 
-    def enabled(self, options, args):
-        if hasattr(options, 'server'):
-            return options.server
-        return False
-
     def configure(self, binder, options, args):
-        binder.bind_to_constructor('browser', self.__constructor)
+        binder.bind_to_constructor('api.controller', self.__api_service)
+        binder.bind_to_constructor('api.client_manager', self.__client_manager)
 
     @inject.params(config='config')
-    def __constructor(self, config=None):
-        from .gui.webview import KioskWebView
+    def __api_service(self, config):
+        from modules.api.server import controller
+        return controller
 
-        return KioskWebView()
+    @inject.params(config='config')
+    def __client_manager(self, config):
+        from modules.api.client import ApiClientManager
+        return ApiClientManager(config)

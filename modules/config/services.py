@@ -37,7 +37,7 @@ class ConfigService(object):
             self._parser.set('browser', 'url', 'https://zabbix.fitbase.de/screens.php?elementId=25')
 
             self._parser.add_section('server')
-            self._parser.set('server', 'port', '50051')
+            self._parser.set('server', 'port', '52312')
             self._parser.set('server', 'host', '[::]')
 
             self._parser.add_section('scanner')

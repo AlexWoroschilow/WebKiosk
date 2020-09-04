@@ -10,18 +10,25 @@
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+
 import inject
 
-from PyQt5 import QtCore
-from PyQt5 import QtWidgets
-from PyQt5 import QtGui
 
+class Loader(object):
 
-class ManagerWindow(QtWidgets.QMainWindow):
-    
-    def __init__(self):
-        super(ManagerWindow, self).__init__()
-        self.setWindowTitle('AOD - monitoring wall')
-        self.resize(1100, 600)    
+    def __enter__(self):
+        return self
 
-        self.show()
+    def __exit__(self, type, value, traceback):
+        pass
+
+    def enabled(self, options, args):
+        return not hasattr(options, 'server')
+
+    def configure(self, binder, options, args):
+        binder.bind_to_provider('manager_device', self.__device)
+
+    @inject.params(scanner='network_scanner')
+    def __device(self, scanner=None):
+        from .gui.device import DeviceWidgetManager
+        return DeviceWidgetManager()

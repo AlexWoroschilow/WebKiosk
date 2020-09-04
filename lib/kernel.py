@@ -10,88 +10,144 @@
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+import re
 import os
 import glob
 import logging
 import inject
-
 import importlib
-from lib.event import Dispatcher
+import functools
 
 
 class Kernel(object):
 
-    def __init__(self, options=None, args=None, sources="modules/**/module.py"):
-        self._options = options
-        self._sources = sources
-        self._args = args
-        self._loaders = []
+    def __init__(self, options=None, args=None, sources=["plugins/**/__init__.py", "modules/**/__init__.py"]):
 
-        inject.configure(self.__configure_dependencies)
+        self.modules = self.get_module_collection(sources, options, args)
 
-        for loader in self._loaders:
-            if hasattr(loader.__class__, 'boot') and \
-            callable(getattr(loader.__class__, 'boot')):
-                loader.boot(options, args)
-
-        dispatcher = self.get('event_dispatcher')
-        dispatcher.dispatch('kernel.start')
-
-    @property
-    def options(self):
-        return self._options
-
-    @property
-    def args(self):
-        return self._args
-
-    def __configure_dependencies(self, binder):
-        
-        binder.bind('logger', logging.getLogger('app'))
-        
-        logger = logging.getLogger('dispatcher')
-        binder.bind('event_dispatcher', Dispatcher(logger))
+        inject.configure(functools.partial(
+            self.configure,
+            modules=self.modules,
+            options=options,
+            args=args
+        ))
 
         logger = logging.getLogger('kernel')
-        for module_source in self.__modules(self._sources):
-            try:
-                module = importlib.import_module(module_source, False)
-                with module.Loader(self._options, self._args) as loader:
-                    if not loader.enabled:
-                        continue
-                    
-                    if hasattr(loader.__class__, 'config') and \
-                    callable(getattr(loader.__class__, 'config')):
-                            binder.install(loader.config)
-                            
-                    self._loaders.append(loader)
-                    
-            except (SyntaxError, RuntimeError) as err:
-                logger.critical("%s: %s" % (module_source, err))
+        for module in sorted(self.modules, key=self._sort_by_module_order):
+            if not hasattr(module, 'boot'):
                 continue
-            
-        binder.bind('kernel', self)
 
-    def __modules(self, mask=None):
+            loader_boot = getattr(module, 'boot')
+            if not callable(loader_boot):
+                continue
+
+            logger.debug("booting: {}".format(module))
+            module.boot(options, args)
+
+    def _sort_by_module_order(self, module):
+        """
+
+        :param module:
+        :return:
+        """
+        if not hasattr(module, 'order'):
+            return -1
+        return module.order
+
+    def _sort_by_module_name(self, text):
+        """
+
+        :param text:
+        :return:
+        """
+
+        def atoi(text):
+            return int(text) if text.isdigit() else text
+
+        return [atoi(c) for c in re.split('(\d+)', text)]
+
+    def get_module_candidates(self, sources=None):
+        """
+
+        :param sources:
+        :return:
+        """
+        for mask in sources:
+            for source in sorted(glob.glob(mask), key=self._sort_by_module_name, reverse=False):
+                if not os.path.exists(source):
+                    continue
+
+                source = source.replace('/', '.')
+                source = source.replace('.py', '')
+
+                yield source
+
+    def get_module_collection(self, sources=None, options=None, args=None):
+        """
+
+        :param sources:
+        :return:
+        """
+        modules = []
+
         logger = logging.getLogger('kernel')
-        for source in glob.glob(mask):
-            if os.path.exists(source):
-                logger.debug("config: %s" % source)
-                yield source[:-3].replace('/', '.')
+        for source in self.get_module_candidates(sources):
+            try:
 
-    def get(self, name=None):
-        container = inject.get_injector()
-        return container.get_instance(name)
+                module = importlib.import_module(source, False)
+                logger.debug("found: {}".format(source))
+                if not hasattr(module, 'Loader'):
+                    continue
 
-    def dispatch(self, name=None, event=None):
-        dispatcher = self.get('event_dispatcher')
-        dispatcher.dispatch(name, event)
-        
-    def listen(self, name=None, action=None, priority=0):
-        dispatcher = self.get('event_dispatcher')
-        dispatcher.add_listener(name, action, priority)
+                module_class = getattr(module, 'Loader')
+                with module_class() as loader:
 
-    def unlisten(self, name=None, action=None):
-        dispatcher = self.get('event_dispatcher')
-        dispatcher.remove_listener(name, action)
+                    if hasattr(loader, 'enabled'):
+                        if not loader.enabled(options, args):
+                            continue
 
+                    logger.debug("loading: {}".format(loader))
+                    modules.append(loader)
+
+            except (SyntaxError, RuntimeError) as err:
+                logger.critical("{}: {}".format(source, err))
+                continue
+
+        return modules
+
+    def configure(self, binder, modules, options, args):
+        """
+
+        :param binder:
+        :param modules:
+        :param options:
+        :param args:
+        :return:
+        """
+
+        logger = logging.getLogger('kernel')
+        for module in sorted(modules, key=self._sort_by_module_order):
+
+            try:
+
+                if not hasattr(module, 'configure'):
+                    continue
+
+                configure = getattr(module, 'configure')
+                if not callable(configure):
+                    continue
+
+                logger.debug("configuring: {}".format(module))
+
+                binder.install(functools.partial(
+                    module.configure,
+                    options=options,
+                    args=args
+                ))
+
+            except (SyntaxError, RuntimeError) as err:
+                logger.critical("{}: {}".format(module, err))
+                continue
+
+        binder.bind('logger', logging.getLogger('app'))
+        binder.bind('kernel', self)

@@ -12,26 +12,28 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 import Xlib.display
 
-from lib.plugin import Loader
 
+class Loader(object):
 
-class Loader(Loader):
+    def __enter__(self):
+        return self
 
-    @property
-    def enabled(self):
-        if hasattr(self._options, 'server'):
-            return self._options.server
+    def __exit__(self, type, value, traceback):
+        pass
+
+    def enabled(self, options, args):
+        if hasattr(options, 'server'):
+            return options.server
         return False
 
-    def config(self, binder=None):
+    def configure(self, binder, options, args):
 
         display = Xlib.display.Display()
         if display is None or not display:
             return None
-        
+
         display_current = display.screen().root
         if display_current is None or not display_current:
             return None
 
         binder.bind('display', display_current.get_geometry())
- 

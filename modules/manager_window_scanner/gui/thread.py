@@ -11,26 +11,18 @@
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 import inject
+from PyQt5 import QtCore
 
 
-class Loader(object):
+class HostListEntityThread(QtCore.QThread):
+    protocol = QtCore.pyqtSignal(object)
 
-    def __enter__(self):
-        return self
+    def __init__(self, ip):
+        super(HostListEntityThread, self).__init__()
+        self.ip = ip
 
-    def __exit__(self, type, value, traceback):
-        pass
-
-    def enabled(self, options, args):
-        if hasattr(options, 'server'):
-            return options.server
-        return False
-
-    def configure(self, binder, options, args):
-        binder.bind_to_constructor('browser', self.__constructor)
-
-    @inject.params(config='config')
-    def __constructor(self, config=None):
-        from .gui.webview import KioskWebView
-
-        return KioskWebView()
+    @inject.params(scanner='network_scanner.service')
+    def run(self, scanner=None):
+        for result in scanner.scan(self.ip, [('ssh', 22), ('rest', 52312), ('x11vnc', 5900)]):
+            ip, (protocol, port), status = result
+            self.protocol.emit((protocol, port, status))

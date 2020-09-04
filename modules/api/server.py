@@ -148,6 +148,13 @@ class Page(WebKioskResource):
         screenshot = base64.b64encode(screenshot)
 
         return {
-            'picture': screenshot.decode('utf-8'),
+            'screenshot': {
+                'picture': screenshot.decode('utf-8'),
+                'timestamp': int(time.time()),
+            },
+            'url': config.get('browser.url'),
             'timestamp': int(time.time()),
+            'host': socket.gethostname(),
+            'network': self.network,
+            'ip': self.ip
         }

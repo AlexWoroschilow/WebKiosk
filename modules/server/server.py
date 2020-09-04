@@ -11,25 +11,8 @@
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 import inject
-import werkzeug
 from PyQt5 import QtCore
 from gevent.pywsgi import WSGIServer
-
-from lib.plugin import Loader
-
-
-class Loader(Loader):
-
-    @property
-    def enabled(self):
-        return True
-
-    def config(self, binder=None):
-        binder.bind_to_constructor('grpc_server', self.__server)
-
-    @inject.params(config='config')
-    def __server(self, config):
-        return Server()
 
 
 class Server(QtCore.QThread):
@@ -37,10 +20,8 @@ class Server(QtCore.QThread):
     screenshot = QtCore.pyqtSignal(object)
     ping = QtCore.pyqtSignal(object)
 
-    @inject.params(config='config')
-    def run(self, config):
-
-        from . import api
+    @inject.params(config='config', controller='api.controller')
+    def run(self, config, controller):
 
         try:
 
@@ -48,10 +29,9 @@ class Server(QtCore.QThread):
             port = config.get('server.port')
 
             http_server = WSGIServer(
-                (host, int(port)), api.controller
+                (host, int(port)), controller
             )
             http_server.serve_forever()
-            # app.run(debug=True)
 
         except KeyboardInterrupt:
             print('Server stopped by user.')

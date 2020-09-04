@@ -10,19 +10,18 @@
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-import IPy
-import time
-
-import socket
 import errno
-from socket import gethostbyname, gaierror
+import socket
+import time
+from socket import gaierror
+
+import IPy
 
 
 class NetworkScanner(object):
-    
     _pause = False
     _stop = False
-    
+
     def stop(self):
         self._stop = True
         self._pause = False
@@ -41,7 +40,7 @@ class NetworkScanner(object):
         try:
             socket_obj = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             socket.setdefaulttimeout(1)
-    
+
             response = socket_obj.connect_ex((host, int(port)))
             socket_obj.close()
             return (response == 0)
@@ -49,11 +48,10 @@ class NetworkScanner(object):
             return False
         return False
 
-    # [('ssh', 22), ('grcp', 50051), ('x11vnc', 5900)]    
     def scan(self, network=None, ports=None):
         if network is None or ports is None:
             return None
-        
+
         self._pause = False
         self._stop = False
 
@@ -66,7 +64,7 @@ class NetworkScanner(object):
 
             if self._stop == True:
                 break
-        
+
             for bunch in ports:
                 if bunch is None:
                     continue
@@ -81,23 +79,29 @@ class NetworkScanner(object):
 
                 socket_obj = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 socket.setdefaulttimeout(1)
-        
+
                 response = socket_obj.connect_ex((str(ip_address), port))
                 socket_obj.close()
-                
+
                 if response == 0:
                     yield (str(ip_address), (protocol, port), 'SUCCESS')
                     continue
-        
+
                 yield (str(ip_address), (protocol, port), errno.errorcode[response])
 
-            
+
 if __name__ == "__main__":
     scanner = NetworkScanner()
-    for result in scanner.scan('192.168.1.0/24', [('grcp', 50051), ]):
+    for result in scanner.scan('127.0.0.1', [('rest', 52312), ]):
         ip, protocol, result = result
-        if result not in ['SUCCESS']: 
+        if result not in ['SUCCESS']:
             print('.')
             continue
         print(ip, protocol, result)
-        
+
+    for result in scanner.scan('192.168.1.0/24', [('rest', 52312), ]):
+        ip, protocol, result = result
+        if result not in ['SUCCESS']:
+            print('.')
+            continue
+        print(ip, protocol, result)

@@ -9,12 +9,10 @@
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied
-class Loader(object):
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 
-    def __init__(self, options, args):
-        self._options = options
-        self._args = args
+
+class Loader(object):
 
     def __enter__(self):
         return self
@@ -22,12 +20,12 @@ class Loader(object):
     def __exit__(self, type, value, traceback):
         pass
 
-    @property
-    def enabled(self):
-        return True
+    def enabled(self, options, args):
+        return not hasattr(options, 'server')
 
-    def config(self, binder):
-        pass
+    def configure(self, binder, options, args):
+        binder.bind_to_provider('manager_dashboard', self.__dashboard)
 
-    def boot(self, options=None, args=None):
-        pass
+    def __dashboard(self):
+        from .gui.widget import DashboardWidget
+        return DashboardWidget()

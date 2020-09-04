@@ -10,24 +10,15 @@
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-import inject
 
-from lib.plugin import Loader
-
-from .services import ConfigService
+from PyQt5 import QtWidgets
 
 
-class Loader(Loader):
-
-    @property
-    def enabled(self):
-        return True
+class ManagerWindow(QtWidgets.QMainWindow):
     
-    def config(self, binder=None):
-        binder.bind_to_constructor('config', self._service)
+    def __init__(self):
+        super(ManagerWindow, self).__init__()
+        self.setWindowTitle('AOD - monitoring wall')
+        self.resize(1100, 600)    
 
-    @inject.params(kernel='kernel')
-    def _service(self, kernel=None):
-
-        return ConfigService(kernel.options.config)
-
+        self.show()

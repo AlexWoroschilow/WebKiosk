@@ -11,20 +11,19 @@
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 import inject
-
 from PyQt5 import QtCore
 from PyQt5 import QtWidgets
-from PyQt5 import QtGui
 
-from .list import HostList
 from .button import ButtonFlat
+from .line import LineEdit
+from .list import HostList
 
 
 class ScannerWidget(QtWidgets.QWidget):
-    
     open = QtCore.pyqtSignal(object)
+    removeAction = QtCore.pyqtSignal(object)
     save = QtCore.pyqtSignal(object)
-    
+
     scanStart = QtCore.pyqtSignal(object)
     scanStop = QtCore.pyqtSignal(object)
     scanResume = QtCore.pyqtSignal(object)
@@ -36,49 +35,45 @@ class ScannerWidget(QtWidgets.QWidget):
 
         self.layout = QtWidgets.QGridLayout()
         self.setLayout(self.layout)
-        
-        self.mask = QtWidgets.QLineEdit()
+
+        self.mask = LineEdit()
         self.mask.returnPressed.connect(self.onActionStart)
         self.mask.setPlaceholderText('192.168.1.0/24')
-        self.mask.setMinimumWidth(200)
         self.mask.setText(config.get('scanner.network'))
         self.layout.addWidget(self.mask, 0, 0, 1, 10)
-        
+
         self.start = ButtonFlat('Scan')
-        self.start.setMaximumWidth(50)
         self.start.clicked.connect(self.onActionStart)
-        self.layout.addWidget(self.start, 0, 9, 1, 1)
         self.start.setVisible(True)
+        self.layout.addWidget(self.start, 0, 9, 1, 1)
 
         self.stop = ButtonFlat('Stop')
-        self.stop.setMaximumWidth(50)
         self.stop.clicked.connect(self.onActionStop)
         self.layout.addWidget(self.stop, 0, 9, 1, 1)
         self.stop.setVisible(False)
 
         self.pause = ButtonFlat('Pause')
-        self.pause.setMaximumWidth(50)
         self.pause.clicked.connect(self.onActionPause)
         self.layout.addWidget(self.pause, 0, 8, 1, 1)
         self.pause.setVisible(False)
 
         self.resume = ButtonFlat('Resume')
-        self.resume.setMaximumWidth(50)
         self.resume.clicked.connect(self.onActionResume)
         self.layout.addWidget(self.resume, 0, 8, 1, 1)
         self.resume.setVisible(False)
-        
-        self.list = HostList()
-        self.list.open.connect(lambda x: self.open.emit(x))
-        self.list.save.connect(lambda x: self.save.emit(x))
 
-        self.layout.addWidget(self.list, 1, 0, 1, 10)
-        
+        self.list = HostList()
+        self.list.openAction.connect(self.open.emit)
+        self.list.saveAction.connect(self.save.emit)
+        self.list.removeAction.connect(self.hostRemoveEvent)
+
+        self.layout.addWidget(self.list, 2, 0, 1, 10)
+
         self.status = QtWidgets.QLabel()
-        self.layout.addWidget(self.status, 2, 0, 1, 10)
+        self.layout.addWidget(self.status, 1, 0, 1, 10)
 
     @inject.params(config='config')
-    def onActionStart(self, event, config):
+    def onActionStart(self, event=None, config=None):
         config.set('scanner.network', self.mask.text())
         self.scanStart.emit(self.mask.text())
         self.start.setVisible(False)
@@ -116,14 +111,18 @@ class ScannerWidget(QtWidgets.QWidget):
         hostFound = storage.found((ip, None))
         self.list.addHost(hostFound)
 
+    @inject.params(storage='storage')
+    def hostRemoveEvent(self, host, storage):
+        print(storage.remove(host), host)
+
     def onActionScanningStatus(self, data):
         ip, (protocol, port), result = data
         self.status.setText('Scanning: {}:{} - {}'.format(ip, port, protocol))
 
-    def onActionScanningStart (self, data):
+    def onActionScanningStart(self, data):
         network, protocols = data
         self.status.setText('Scanning: {}...'.format(network))
 
-    def onActionScanningStop (self, data):
+    def onActionScanningStop(self, data):
         network, protocols = data
         self.status.setText('Finished: {}...'.format(network))
