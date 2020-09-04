@@ -105,7 +105,7 @@ class DeviceWidget(QtWidgets.QWidget):
     def onActionUrlSend(self, event=None, manager=None):
         if not len(self.url.text()):
             return None
-        client = manager.instance(self.host, 50051)
+        client = manager.instance(self.host.ip, 50051)
         self.status(client.url(self.url.text()))
 
     def onActionRefresh(self, event=None):

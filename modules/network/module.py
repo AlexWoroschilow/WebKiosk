@@ -44,10 +44,10 @@ class Loader(Loader):
 
 class ScannerThread(QtCore.QThread):
     started = QtCore.pyqtSignal(object)
-    finished = QtCore.pyqtSignal(object)
     status = QtCore.pyqtSignal(object)
     closed = QtCore.pyqtSignal(object)
-    open = QtCore.pyqtSignal(object)
+    found = QtCore.pyqtSignal(object)
+    stoped = QtCore.pyqtSignal(object)
 
     def __init__(self, scanner):
         super(ScannerThread, self).__init__()
@@ -55,7 +55,9 @@ class ScannerThread(QtCore.QThread):
         self.network = None
         self.ports = None
 
-    def scan(self, network=None, ports=None):
+    @inject.params(logger='logger')
+    def scan(self, network=None, ports=[('grcp', 50051), ], logger=None):
+        logger.info('[scanner] scanning: {}'.format(network, ports))
         self.network = network
         self.ports = ports
         self.start()
@@ -80,6 +82,6 @@ class ScannerThread(QtCore.QThread):
             if result not in ['SUCCESS']: 
                 self.closed.emit((ip, protocol, result))
                 continue
-            self.open.emit((ip, protocol, result))
-        self.finished.emit((self.network, self.ports))
+            self.found.emit((ip, protocol, result))
+        self.stoped.emit((self.network, self.ports))
 

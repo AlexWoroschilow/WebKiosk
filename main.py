@@ -23,6 +23,7 @@ import optparse
 
 from PyQt5 import QtCore
 from PyQt5 import QtWidgets
+from PyQt5 import QtWebEngineWidgets
 
 from lib.kernel import Kernel
 
@@ -39,9 +40,9 @@ class Application(QtWidgets.QApplication):
     def exec_(self, display=None, browser=None, config=None, server=None):
 
         if server is not None and browser is not None:
-            server.command.connect(browser.command)
-            server.screenshot.connect(browser.screenshot)
-            server.ping.connect(browser.ping)
+            # server.command.connect(browser.command)
+            # server.screenshot.connect(browser.screenshot)
+            # server.ping.connect(browser.ping)
             server.start()
 
         browser.resize(display.width, display.height)

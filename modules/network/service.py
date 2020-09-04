@@ -50,7 +50,10 @@ class NetworkScanner(object):
         return False
 
     # [('ssh', 22), ('grcp', 50051), ('x11vnc', 5900)]    
-    def scan(self, network='192.168.1.0/24', ports=[('grcp', 50051)]):
+    def scan(self, network=None, ports=None):
+        if network is None or ports is None:
+            return None
+        
         self._pause = False
         self._stop = False
 
@@ -65,6 +68,8 @@ class NetworkScanner(object):
                 break
         
             for bunch in ports:
+                if bunch is None:
+                    continue
                 protocol, port = bunch
                 if self._pause == True:
                     time.sleep(1)
@@ -89,7 +94,7 @@ class NetworkScanner(object):
             
 if __name__ == "__main__":
     scanner = NetworkScanner()
-    for result in scanner.scan():
+    for result in scanner.scan('192.168.1.0/24', [('grcp', 50051), ]):
         ip, protocol, result = result
         if result not in ['SUCCESS']: 
             print('.')

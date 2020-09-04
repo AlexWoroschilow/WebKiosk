@@ -19,56 +19,7 @@ from PyQt5 import QtWidgets
 from .button import ButtonFlat
 from .label import LabelTitle
 from .label import LabelText
-
-
-class HostEntityProtocol(QtWidgets.QWidget):
-
-    def __init__(self, collection=[]):
-        super(HostEntityProtocol, self).__init__()
-        self.layout = QtWidgets.QHBoxLayout()
-        self.setLayout(self.layout)
-
-        for name in collection:
-            label = LabelText(name)
-            self.layout.addWidget(label, 0, Qt.AlignLeft)
-            
-        self.spacer = QtWidgets.QWidget()
-        self.spacer.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred);
-        self.layout.addWidget(self.spacer)
-
-    def append(self, collection=[]):
-        self.layout.removeWidget(self.spacer)
-        for name in collection:
-            label = LabelText(name)
-            self.layout.addWidget(label, 0, Qt.AlignLeft)
-
-        self.spacer = QtWidgets.QWidget()
-        self.spacer.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred);
-        self.layout.addWidget(self.spacer)
-
-
-class HostEntity(QtWidgets.QWidget):
-    
-    open = QtCore.pyqtSignal(object)
-    save = QtCore.pyqtSignal(object)
-
-    def __init__(self, host):
-        super(HostEntity, self).__init__()
-
-        self.layout = QtWidgets.QGridLayout()
-
-        self.layout.addWidget(LabelTitle("{}".format(host.name)), 0, 0)
-        self.layout.addWidget(LabelText("{}".format(host.ip)), 1, 0)
-        
-        button = ButtonFlat('Open')
-        self.layout.addWidget(button, 0, 1)
-        button.clicked.connect(lambda x: self.open.emit(host))
-
-        button = ButtonFlat('Update')
-        self.layout.addWidget(button, 1, 1)
-        button.clicked.connect(lambda x: self.save.emit(host))
-
-        self.setLayout(self.layout)
+from .widget import HostEntityProtocol
 
 
 class HostList(QtWidgets.QListWidget):
@@ -80,7 +31,7 @@ class HostList(QtWidgets.QListWidget):
     @inject.params(storage='storage')
     def __init__(self, storage):
         super(HostList, self).__init__()
-        self.setStyleSheet("QListWidget::item {border: none; min-height: 80px; }");
+        self.setStyleSheet("QListWidget::item { border: none; min-height: 90px; }");
         for host in storage.scanned:
             self.addHost(host)
     
@@ -89,25 +40,61 @@ class HostList(QtWidgets.QListWidget):
             return None
         
         item = QtWidgets.QListWidgetItem()
-        item.widget = HostEntity(host)
+        item.widget = HostListEntity(host)
         item.widget.open.connect(lambda x: self.open.emit(x))
-        item.widget.save.connect(self.onActionUpdate)
+        item.widget.save.connect(lambda x: self.save.emit(x))
 
         self.addItem(item)
 
         self.setItemWidget(item, item.widget)
 
-    @inject.params(storage='storage', manager='grpc_client_manager')
-    def onActionUpdate(self, host, storage, manager):
-        client = manager.instance(host.ip)
-        if client is None or not client:
-            return None
 
-        screenshot = client.screenshot()
-        if screenshot is None or not screenshot:
-            return None
+class HostListEntity(QtWidgets.QWidget):
+    
+    open = QtCore.pyqtSignal(object)
+    save = QtCore.pyqtSignal(object)    
+
+    def __init__(self, host):
+        super(HostListEntity, self).__init__()
+        self.setContentsMargins(0, 0, 0, 0)
+
+        self.layout = QtWidgets.QGridLayout()
+        self.layout.setContentsMargins(10, 0, 0, 0)
+        self.layout.addWidget(LabelTitle("{}".format(host.name)), 0, 0, 1, 10)
+        self.layout.addWidget(LabelText("{}".format(host.ip)), 1, 0)
         
-        host.screenshot = screenshot.data
-        storage.update(host)
+        self.protocols = HostEntityProtocol()
+        self.layout.addWidget(self.protocols, 2, 0, 1, 10)
         
-        self.save.emit(host)
+        button = ButtonFlat('Open')
+        self.layout.addWidget(button, 0, 10)
+        button.clicked.connect(lambda x: self.open.emit(host))
+
+        button = ButtonFlat('Append')
+        self.layout.addWidget(button, 1, 10)
+        button.clicked.connect(lambda x: self.save.emit(host))
+
+        self.setLayout(self.layout)
+        
+        self.thread = HostListEntityThread(host.ip)
+        self.thread.protocol.connect(self.protocol)
+        self.thread.start()
+        
+    def protocol(self, data):
+        name, port, status = data
+        self.protocols.append(name, status == 'SUCCESS')
+
+
+class HostListEntityThread(QtCore.QThread):
+
+    protocol = QtCore.pyqtSignal(object)
+
+    def __init__(self, ip):
+        super(HostListEntityThread, self).__init__()
+        self.ip = ip
+        
+    @inject.params(scanner='network_scanner.service')
+    def run(self, scanner=None):
+        for result in scanner.scan(self.ip, [('ssh', 22), ('grcp', 50051), ('x11vnc', 5900)]):
+            ip, (protocol, port), status = result
+            self.protocol.emit((protocol, port, status))

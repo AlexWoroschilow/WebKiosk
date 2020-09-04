@@ -73,6 +73,13 @@ class ServiceStorage(Storage):
             return session.query(Host).all()
         return []
 
+    def append(self, entity):
+        session = self.session_instance
+        if session is not None:
+            session.add(entity)
+            session.commit()
+        return entity
+
     def update(self, entity):
         session = self.session_instance
         if session is not None:
@@ -84,7 +91,7 @@ class ServiceStorage(Storage):
         if session is not None:
             return session.query(HostFound)\
                 .filter(HostFound.ip == ip)\
-                .one()
+                .one_or_none()
         return None
 
     def found(self, entity=None):

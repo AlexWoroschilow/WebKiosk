@@ -18,6 +18,7 @@ from PyQt5 import QtWidgets
 from lib.plugin import Loader
 
 from .gui.window import ManagerWindow 
+from modules.manager.gui import dashboard
 
 
 class Loader(Loader):
@@ -32,22 +33,22 @@ class Loader(Loader):
         binder.bind_to_provider('manager_dashboard', self.__dashboard)
         binder.bind_to_provider('manager_device', self.__device)
  
-    @inject.params(widget1='manager_scanner', widget2='manager_dashboard')
-    def __window(self, widget1=None, widget2=None):
+    @inject.params(scanner='manager_scanner', dashboard='manager_dashboard')
+    def __window(self, scanner=None, dashboard=None):
 
         window = ManagerWindow()
 
         container = QtWidgets.QSplitter()
         window.setCentralWidget(container)
 
-        widget1.open.connect(functools.partial(self.onActionHostOpen, window=window))
-        widget1.save.connect(functools.partial(self.onActionHostSave, window=window))
+        scanner.open.connect(functools.partial(self.onActionHostOpen, window=window))
+        scanner.save.connect(functools.partial(dashboard.onActionHostSave, window=window))
         
-        widget2.open.connect(functools.partial(self.onActionHostOpen, window=window))
-        widget2.save.connect(functools.partial(self.onActionHostSave, window=window))
+        dashboard.open.connect(functools.partial(self.onActionHostOpen, window=window))
+        dashboard.save.connect(functools.partial(dashboard.onActionHostSave, window=window))
 
-        container.addWidget(widget1)
-        container.addWidget(widget2)
+        container.addWidget(scanner)
+        container.addWidget(dashboard)
 
         return window
     
@@ -67,8 +68,10 @@ class Loader(Loader):
         widget.scanResume.connect(scanner.resume)
         widget.scanStop.connect(scanner.stop)
 
-        scanner.open.connect(widget.onHostOpen)
-        scanner.status.connect(widget.onHostStatus)
+        scanner.started.connect(widget.onActionScanningStart)
+        scanner.found.connect(widget.onActionScanningFound)
+        scanner.status.connect(widget.onActionScanningStatus)
+        scanner.stoped.connect(widget.onActionScanningStop)
         
         return widget    
     
@@ -88,12 +91,8 @@ class Loader(Loader):
         
         window.setCentralWidget(widget)
         
-        widget.back.connect(functools.partial(
-            self.onActionDashboard, window=window
-        ))
-
-    def onActionHostSave(self, data, window):
-        print(data, window)
+        action = functools.partial(self.onActionDashboard, window=window)
+        widget.back.connect(action)
 
     @inject.params(widget1='manager_scanner', widget2='manager_dashboard')
     def onActionDashboard(self, window, widget1=None, widget2=None):
@@ -102,10 +101,10 @@ class Loader(Loader):
         window.setCentralWidget(container)
 
         widget1.open.connect(functools.partial(self.onActionHostOpen, window=window))
-        widget1.save.connect(functools.partial(self.onActionHostSave, window=window))
+        widget1.save.connect(functools.partial(widget2.onActionHostSave, window=window))
         
         widget2.open.connect(functools.partial(self.onActionHostOpen, window=window))
-        widget2.save.connect(functools.partial(self.onActionHostSave, window=window))
+        widget2.save.connect(functools.partial(widget2.onActionHostSave, window=window))
 
         container.addWidget(widget1)
         container.addWidget(widget2)

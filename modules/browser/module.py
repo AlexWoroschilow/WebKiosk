@@ -24,13 +24,10 @@ class Loader(Loader):
         return False
 
     def config(self, binder=None):
-        
         binder.bind_to_constructor('browser', self.__constructor)
-        
+
     @inject.params(config='config')
     def __constructor(self, config=None):
         from .gui.webview import KioskWebView
-        
-        destination = config.get('browser.cookies')
-        return KioskWebView(destination)
-        
+
+        return KioskWebView()

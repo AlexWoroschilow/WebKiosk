@@ -64,8 +64,8 @@ class KioskClient(object):
                         code=''
                     ) 
                 ))
-        except grpc._channel._Rendezvous:
-            logger.error('Server unavailable: {}:{}'.format(self.server, self.port))
+        except (grpc._channel._Rendezvous, grpc._channel._InactiveRpcError) as ex:
+            logger.error('Server unavailable: {}:{}, {}'.format(self.server, self.port, ex))
         return None
 
     @inject.params(config='config', logger='logger')
@@ -79,7 +79,7 @@ class KioskClient(object):
                         data='', code=''
                     ) 
                 ))
-        except grpc._channel._Rendezvous:
+        except (grpc._channel._Rendezvous, grpc._channel._InactiveRpcError) as ex:
             logger.error('Server unavailable: {}:{}'.format(self.server, self.port))
         return None
 
@@ -94,7 +94,7 @@ class KioskClient(object):
                         code='url', data=url
                     ) 
                 ))
-        except grpc._channel._Rendezvous:
+        except (grpc._channel._Rendezvous, grpc._channel._InactiveRpcError) as ex:
             logger.error('Server unavailable: {}:{}'.format(self.server, self.port))
         return None
 
