@@ -16,6 +16,7 @@ from PyQt5 import QtCore
 from PyQt5 import QtWebEngineWidgets
 from PyQt5 import QtCore
 from PyQt5 import QtGui
+import netifaces
 
 
 class KioskWebView(QtWebEngineWidgets.QWebEngineView):
@@ -30,6 +31,7 @@ class KioskWebView(QtWebEngineWidgets.QWebEngineView):
     def __init__(self, config=None):
         super(KioskWebView, self).__init__()
         # self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)
+        self.setWindowTitle(self.ip)
 
         profile_default: QtWebEngineWidgets.QWebEngineProfile = self.page().profile()
         profile_default.setPersistentCookiesPolicy(QtWebEngineWidgets.QWebEngineProfile.ForcePersistentCookies)
@@ -38,6 +40,15 @@ class KioskWebView(QtWebEngineWidgets.QWebEngineView):
 
         self.screenshotAction.connect(self.screenshotEvent)
         self.pageAction.connect(self.pageEvent)
+
+    @property
+    def ip(self):
+        addresses = []
+        for iface in netifaces.interfaces():
+            for data in netifaces.ifaddresses(iface).setdefault(netifaces.AF_INET, [{'addr': None}]):
+                if data['addr'] not in [None, '127.0.0.1']:
+                    addresses.append(data['addr'])
+        return " ".join(addresses)
 
     def command(self, command):
         if command.code in ['open', 'url', 'link']:
