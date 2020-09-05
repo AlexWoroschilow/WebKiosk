@@ -58,7 +58,7 @@ class HostEntityProtocol(QtWidgets.QWidget):
             self.layout.removeWidget(widget)
 
 
-class HostListEntity(QtWidgets.QWidget):
+class HostListEntity(QtWidgets.QFrame):
     openAction = QtCore.pyqtSignal(object)
     removeAction = QtCore.pyqtSignal(object)
     saveAction = QtCore.pyqtSignal(object)

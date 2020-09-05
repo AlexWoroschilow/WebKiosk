@@ -74,8 +74,14 @@ class ServiceStorage(Storage):
         session = self.session_instance
         if not session: return None
 
-        session.add(entity)
-        session.commit()
+        try:
+            session.add(entity)
+            session.commit()
+        except(InvalidRequestError, Exception) as ex:
+            logging.getLogger('database').exception(ex)
+            session.rollback()
+            session.close()
+
         return entity
 
     def update(self, entity):
@@ -98,9 +104,9 @@ class ServiceStorage(Storage):
         if not session: return None
 
         entity = HostFound(ip=ip, name=ip, screenshot=screenshot)
-        session.add(entity)
 
         try:
+            session.add(entity)
             session.commit()
             return entity
         except(InvalidRequestError, Exception) as ex:
@@ -115,8 +121,6 @@ class ServiceStorage(Storage):
         if not session: return None
 
         try:
-            session.add(entity)
-            session.commit()
             session.delete(entity)
             session.commit()
         except(InvalidRequestError, Exception) as ex:
@@ -131,9 +135,9 @@ class ServiceStorage(Storage):
         if not session: return None
 
         entity = Host(ip=found.ip, name=found.ip, screenshot=found.screenshot)
-        session.add(entity)
 
         try:
+            session.add(entity)
             session.commit()
             return entity
         except(InvalidRequestError, Exception) as ex:

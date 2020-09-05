@@ -25,7 +25,6 @@ class HostList(QtWidgets.QListWidget):
 
     def __init__(self):
         super(HostList, self).__init__()
-        self.setStyleSheet("QListWidget::item { border: none; min-height: 90px; }");
         self.setMinimumWidth(300)
         self.refresh()
 

@@ -14,9 +14,9 @@ import inject
 from PyQt5 import QtCore
 
 
-
 class DashboardEntityThread(QtCore.QThread):
     screenshot = QtCore.pyqtSignal(object)
+    statusAction = QtCore.pyqtSignal(object)
     protocol = QtCore.pyqtSignal(object)
 
     def __init__(self, ip):
@@ -26,11 +26,12 @@ class DashboardEntityThread(QtCore.QThread):
     @inject.params(manager='api.client_manager', scanner='network_scanner.service')
     def run(self, manager=None, scanner=None):
         client = manager.instance(self.ip, 52312)
-        if client is None or not client:
-            return None
-        screenshot = client.screenshot()
-        if screenshot is not None and screenshot:
-            self.screenshot.emit(screenshot)
+        if not client: return None
+
+        status = client.status()
+        if not status: return None
+        self.statusAction.emit(status)
+
         for result in scanner.scan(self.ip, [('ssh', 22), ('rest', 52312), ('x11vnc', 5900)]):
             ip, (protocol, port), status = result
             self.protocol.emit((protocol, port, status))

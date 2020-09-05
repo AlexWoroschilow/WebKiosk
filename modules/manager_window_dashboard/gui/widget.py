@@ -53,11 +53,11 @@ class HostEntityProtocol(QtWidgets.QWidget):
         self.layout.addWidget(label, 0, Qt.AlignLeft)
 
         self.spacer = QtWidgets.QWidget()
-        self.spacer.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred);
+        self.spacer.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred)
         self.layout.addWidget(self.spacer)
 
 
-class DashboardEntity(QtWidgets.QWidget):
+class DashboardEntity(QtWidgets.QFrame):
     openAction = QtCore.pyqtSignal(object)
     removeAction = QtCore.pyqtSignal(object)
     saveAction = QtCore.pyqtSignal(object)
@@ -67,18 +67,20 @@ class DashboardEntity(QtWidgets.QWidget):
         self.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
         self.host = host
 
+        self.label = LabelSubtitle(host.name)
+
         self.layout = QtWidgets.QGridLayout()
-        self.layout.addWidget(LabelSubtitle(host.name), 0, 0, 1, 3)
+        self.layout.addWidget(self.label, 0, 0, 1, 3)
 
         self.button = IconButton(QtGui.QIcon('img/trash'))
         self.button.clicked.connect(lambda x: self.removeAction.emit(host))
         self.layout.addWidget(self.button, 0, 2, 1, 1)
 
-        self.pixmap = QtGui.QPixmap('img/desktop.png')
+        self.pixmap = QtGui.QPixmap('img/desktop.svg')
         if host.screenshot is not None and host.screenshot:
             self.pixmap.loadFromData(QtCore.QByteArray().fromRawData(host.screenshot))
 
-        self.button = ButtonPicture(self.pixmap.scaled(300, 400, Qt.KeepAspectRatioByExpanding))
+        self.button = ButtonPicture(self.pixmap.scaled(300, 300, Qt.KeepAspectRatio))
         self.button.clicked.connect(lambda x: self.openAction.emit(host))
         self.layout.addWidget(self.button, 1, 0, 3, 3)
 
@@ -87,9 +89,14 @@ class DashboardEntity(QtWidgets.QWidget):
 
         self.setLayout(self.layout)
 
+        effect = QtWidgets.QGraphicsDropShadowEffect()
+        effect.setBlurRadius(10)
+        effect.setOffset(0)
+        self.setGraphicsEffect(effect)
+
     def start(self):
         self.thread = DashboardEntityThread(self.host.ip)
-        self.thread.screenshot.connect(self.screenshot)
+        self.thread.statusAction.connect(self.statusEvent)
         self.thread.protocol.connect(self.protocol)
         self.thread.start()
 
@@ -98,13 +105,19 @@ class DashboardEntity(QtWidgets.QWidget):
         self.protocols.append(name, status == 'SUCCESS')
 
     @inject.params(storage='storage')
-    def screenshot(self, screenshot, storage=None):
+    def statusEvent(self, status, storage=None):
+        if not status: return None
+        self.host.name = status.get('host')
+
+        screenshot = status.get('screenshot')
         if not screenshot: return None
-        self.host.screenshot = screenshot
+        self.host.screenshot = screenshot.get('picture')
+
         storage.update(self.host)
 
-        self.pixmap.loadFromData(self.host.screenshot)
-        self.button.setPixmap(self.pixmap.scaled(300, 400, Qt.KeepAspectRatio))
+        self.pixmap.loadFromData(screenshot.get('picture'))
+        self.button.setPixmap(self.pixmap.scaled(300, 300, Qt.KeepAspectRatio))
+        self.label.setText(status.get('host'))
 
 
 class DashboardWidget(QtWidgets.QWidget):
@@ -139,7 +152,7 @@ class DashboardWidget(QtWidgets.QWidget):
         host.ip = scanned.ip
         host.screenshot = scanned.screenshot
         host.name = scanned.name
-        storage.append(host)
+        storage.save(host)
         self.dashboard.refresh()
 
     @inject.params(storage='storage', host='storage.host')

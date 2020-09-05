@@ -1,0 +1,9 @@
+ManagerWindow { background: #ffffff; border: none; }
+
+HostList { border: none; }
+DashboardWidgetScrollArea { border: none; }
+DashboardEntity { background: #ffffff; border: none; margin: 10px; }
+
+HostList::item { min-height: 100px; margin: 5px 0px;  }
+
+HostListEntity { background: #ffffff; border-bottom: 1px dashed #a4a4a4; padding: 3px;}

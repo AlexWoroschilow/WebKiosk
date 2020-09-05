@@ -10,15 +10,15 @@
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-
+import inject
 from PyQt5 import QtWidgets
 
 
 class ManagerWindow(QtWidgets.QMainWindow):
-    
+
     def __init__(self):
         super(ManagerWindow, self).__init__()
         self.setWindowTitle('AOD - monitoring wall')
-        self.resize(1100, 600)    
+        self.resize(1100, 600)
 
         self.show()

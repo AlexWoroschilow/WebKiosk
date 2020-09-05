@@ -10,64 +10,64 @@
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-import os
 import configparser
+import os
 
 
-class ConfigService(object):
-    _parser = None
+class ConfigFile(object):
+    parser = configparser.ConfigParser()
+    file = None
 
     def __init__(self, file=None):
-        self._file = file
-        self._parser = configparser.ConfigParser()
-        if os.path.exists(self._file):
-            self._parser.read(self._file)
+        if file is None:
             return None
-                    
-        folder = os.path.dirname(self._file)
+
+        self.file = file
+        if os.path.exists(self.file):
+            self.parser.read(self.file)
+            return None
+
+        folder = os.path.dirname(self.file)
         if not os.path.exists(folder):
             os.makedirs(folder)
 
-        with open(self._file, 'w') as stream:
-            self._parser.add_section('security')
-            self._parser.set('security', 'code', 'TeßtC0de!1')
-
-            self._parser.add_section('browser')
-            self._parser.set('browser', 'cookies', './cookie.cfg')
-            self._parser.set('browser', 'url', 'https://zabbix.fitbase.de/screens.php?elementId=25')
-
-            self._parser.add_section('server')
-            self._parser.set('server', 'port', '52312')
-            self._parser.set('server', 'host', '[::]')
-
-            self._parser.add_section('scanner')
-            self._parser.set('scanner', 'network', '192.168.1.0/24')
-            
-            self._parser.add_section('storage')
-            self._parser.set('storage', 'database', 'kiosk.db')
-            
-            self._parser.write(stream)
+        with open(self.file, 'w') as stream:
             stream.close()
-            
-        self._parser.read(self._file)
+
+        self.parser.read(self.file)
         return None
 
     def get(self, name, default=None):
-        section, option = name.split('.')
-        if not self._parser.has_section(section):
+        if not self.has(name):
+            return self.set(name, default)
+
+        section, option = name.split('.', 1)
+        if not self.parser.has_section(section):
             return None
-        if self._parser.has_option(section, option):
-            return self._parser.get(section, option)
+
+        if self.parser.has_option(section, option):
+            response = self.parser.get(section, option)
+            if response is not None and len(response):
+                return response
+            return self.set(name, default)
         return None
 
     def set(self, name, value=None):
-        section, option = name.split('.')
-        
-        if not self._parser.has_section(section):
-            self._parser.add_section(section)
-        
-        self._parser.set(section, option, value)
-        with open(self._file, 'w') as stream:
-            self._parser.write(stream)
-            stream.close()
+        section, option = name.split('.', 1)
 
+        if not self.parser.has_section(section):
+            self.parser.add_section(section)
+
+        self.parser.set(section, option, '%s' % value)
+        with open(self.file, 'w') as stream:
+            self.parser.write(stream)
+            stream.close()
+        return value
+
+    def has(self, name):
+        section, option = name.split('.', 1)
+
+        if self.parser.has_section(section):
+            return self.parser.has_option(section, option)
+
+        return False

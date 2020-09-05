@@ -31,11 +31,15 @@ class Loader(object):
     def configure(self, binder, options, args):
         binder.bind_to_constructor('manager', self.__window)
 
-    @inject.params(scanner='manager_scanner', dashboard='manager_dashboard')
-    def __window(self, scanner=None, dashboard=None):
+    @inject.params(config='config', themes='themes', scanner='manager_scanner', dashboard='manager_dashboard')
+    def __window(self, config=None, themes=None, scanner=None, dashboard=None):
         from .gui.window import ManagerWindow
 
         window = ManagerWindow()
+        window.setStyleSheet(themes.get_stylesheet())
+        width = int(config.get('winow.width', 1100))
+        height = int(config.get('winow.height', 600))
+        window.resize(width, height)
 
         container = QtWidgets.QSplitter(Qt.Horizontal)
         container.setContentsMargins(0, 0, 0, 0)
@@ -57,13 +61,17 @@ class Loader(object):
 
         return window
 
-    @inject.params(scanner='manager_scanner', dashboard='manager_dashboard')
-    def onActionDashboard(self, window, scanner=None, dashboard=None):
+    @inject.params(config='config', scanner='manager_scanner', dashboard='manager_dashboard')
+    def onActionDashboard(self, config, window, scanner=None, dashboard=None):
 
         container = QtWidgets.QSplitter(Qt.Horizontal)
         container.setContentsMargins(0, 0, 0, 0)
 
         window.setCentralWidget(container)
+
+        width = int(config.get('winow.width', 1100))
+        height = int(config.get('winow.height', 600))
+        window.resize(width, height)
 
         scanner.open.connect(functools.partial(self.onActionHostOpen, window=window))
         scanner.save.connect(functools.partial(dashboard.onActionHostSave, window=window))
@@ -89,7 +97,6 @@ class Loader(object):
 
         window.setCentralWidget(widget)
         widget.back.connect(functools.partial(self.onActionDashboard, window=window))
-
 
     @inject.params(manager='manager_device')
     def onActionHostOpen(self, host, manager, window):

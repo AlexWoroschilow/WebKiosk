@@ -29,8 +29,11 @@ class ApiClient(object):
     @inject.params(config='config')
     def url(self, page, config):
 
-        url = 'http://{}:{}/api/page/open'.format(self.host, self.port)
-        response = requests.post(url, json={"url": page}, headers=self.headers).json()
+        try:
+            url = 'http://{}:{}/api/page/open'.format(self.host, self.port)
+            response = requests.post(url, json={"url": page}, headers=self.headers).json()
+        except Exception as ex:
+            return None
 
         if 'screenshot' in response.keys():
             response['screenshot']['picture'] = base64.b64decode(
@@ -41,8 +44,11 @@ class ApiClient(object):
 
     @inject.params(config='config')
     def status(self, config):
-        url = 'http://{}:{}/api/status'.format(self.host, self.port)
-        response = requests.get(url, headers=self.headers).json()
+        try:
+            url = 'http://{}:{}/api/status'.format(self.host, self.port)
+            response = requests.get(url, headers=self.headers).json()
+        except Exception as ex:
+            return None
 
         if 'screenshot' in response.keys():
             response['screenshot']['picture'] = base64.b64decode(
@@ -53,14 +59,23 @@ class ApiClient(object):
 
     @inject.params(config='config')
     def ping(self, config):
-        url = 'http://{}:{}/api/ping'.format(self.host, self.port)
-        return requests.get(url, headers=self.headers).json()
+
+        try:
+            url = 'http://{}:{}/api/ping'.format(self.host, self.port)
+            return requests.get(url, headers=self.headers).json()
+        except Exception as ex:
+            return None
 
     @inject.params(config='config')
     def screenshot(self, config=None):
-        url = 'http://{}:{}/api/screenshot'.format(self.host, self.port)
-        response = requests.get(url, headers=self.headers)
-        response = response.json()
+
+        try:
+            url = 'http://{}:{}/api/screenshot'.format(self.host, self.port)
+            response = requests.get(url, headers=self.headers)
+            response = response.json()
+        except Exception as ex:
+            return None
+
         if 'picture' not in response.keys():
             return None
 
