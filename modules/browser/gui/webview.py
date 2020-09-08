@@ -15,6 +15,7 @@ import inject
 from PyQt5 import QtCore
 from PyQt5 import QtWebEngineWidgets
 from PyQt5 import QtCore
+from PyQt5.QtCore import Qt
 from PyQt5 import QtGui
 import netifaces
 
@@ -30,7 +31,9 @@ class KioskWebView(QtWebEngineWidgets.QWebEngineView):
     @inject.params(config='config')
     def __init__(self, config=None):
         super(KioskWebView, self).__init__()
-        # self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)
+
+        if bool(config.get('browser.fullscreen', 0)):
+            self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)
         self.setWindowTitle(self.ip)
 
         profile_default: QtWebEngineWidgets.QWebEngineProfile = self.page().profile()
