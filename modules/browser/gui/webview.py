@@ -32,7 +32,7 @@ class KioskWebView(QtWebEngineWidgets.QWebEngineView):
     def __init__(self, config=None):
         super(KioskWebView, self).__init__()
 
-        if bool(config.get('browser.fullscreen', 0)):
+        if bool(config.get('browser.fullscreen', 1)):
             self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)
         self.setWindowTitle(self.ip)
 
