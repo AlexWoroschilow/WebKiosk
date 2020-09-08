@@ -16,6 +16,7 @@ from PyQt5 import QtCore
 from PyQt5 import QtWebEngineWidgets
 from PyQt5 import QtWidgets
 from PyQt5 import QtGui
+from PyQt5.QtCore import Qt
 import netifaces
 
 from .webview import KioskWebView
@@ -38,7 +39,16 @@ class BrowserContainer(QtWidgets.QWidget):
         self.screenshotAction.connect(self.browser.screenshotAction.emit)
         self.pingAction.connect(self.browser.pingAction.emit)
 
-        self.layout().addWidget(self.browser, 0, 0)
+        self.layout().addWidget(self.browser, 0, 0, 30, 3)
+
+        self.title: QtWidgets.QLabel = QtWidgets.QLabel()
+        self.title.setAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
+        self.title.setText(self.browser.ip)
+
+        font: QtGui.QFont = self.title.font()
+        font.setPointSize(20)
+        self.title.setFont(font)
+        self.layout().addWidget(self.title, 0, 1, 1, 1)
 
     @property
     def ip(self):
