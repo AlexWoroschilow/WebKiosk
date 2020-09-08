@@ -38,8 +38,8 @@ class KioskWebView(QtWebEngineWidgets.QWebEngineView):
 
         profile_default: QtWebEngineWidgets.QWebEngineProfile = self.page().profile()
         profile_default.setPersistentCookiesPolicy(QtWebEngineWidgets.QWebEngineProfile.ForcePersistentCookies)
-        profile_default.setPersistentStoragePath(config.get('browser.cookies'))
-        profile_default.setCachePath(config.get('browser.cache'))
+        profile_default.setPersistentStoragePath(config.get('browser.cookies', './cookies/'))
+        profile_default.setCachePath(config.get('browser.cache', './cache/'))
 
         self.screenshotAction.connect(self.screenshotEvent)
         self.pageAction.connect(self.pageEvent)
