@@ -1,4 +1,4 @@
-#! /usr/bin/python3
+#! /usr/bin/env python3.6
 # -*- coding: utf-8 -*-
 # Copyright 2015 Alex Woroschilow (alex.woroschilow@gmail.com)
 #
