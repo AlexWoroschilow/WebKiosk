@@ -21,8 +21,9 @@ class HostListEntityThread(QtCore.QThread):
         super(HostListEntityThread, self).__init__()
         self.ip = ip
 
-    @inject.params(scanner='network_scanner.service')
-    def run(self, scanner=None):
-        for result in scanner.scan(self.ip, [('ssh', 22), ('rest', 52312), ('x11vnc', 5900)]):
+    @inject.params(config='config', scanner='network_scanner.service')
+    def run(self, config=None, scanner=None):
+        server_port = int(config.get('server.port'))
+        for result in scanner.scan(self.ip, [('ssh', 22), ('rest', server_port), ('x11vnc', 5900)]):
             ip, (protocol, port), status = result
             self.protocol.emit((protocol, port, status))

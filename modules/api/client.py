@@ -5,7 +5,7 @@
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
-# http://www.apache.org/licenses/LICENSE-2.0
+# https://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
@@ -30,8 +30,8 @@ class ApiClient(object):
     def url(self, page, config):
 
         try:
-            url = 'http://{}:{}/api/page/open'.format(self.host, self.port)
-            response = requests.post(url, json={"url": page}, headers=self.headers).json()
+            url = 'https://{}:{}/api/page/open'.format(self.host, self.port)
+            response = requests.post(url, json={"url": page}, headers=self.headers, verify=False).json()
         except Exception as ex:
             return None
 
@@ -45,8 +45,8 @@ class ApiClient(object):
     @inject.params(config='config')
     def status(self, config):
         try:
-            url = 'http://{}:{}/api/status'.format(self.host, self.port)
-            response = requests.get(url, headers=self.headers).json()
+            url = 'https://{}:{}/api/status'.format(self.host, self.port)
+            response = requests.get(url, headers=self.headers, verify=False).json()
         except Exception as ex:
             return None
 
@@ -61,8 +61,8 @@ class ApiClient(object):
     def ping(self, config):
 
         try:
-            url = 'http://{}:{}/api/ping'.format(self.host, self.port)
-            return requests.get(url, headers=self.headers).json()
+            url = 'https://{}:{}/api/ping'.format(self.host, self.port)
+            return requests.get(url, headers=self.headers, verify=False).json()
         except Exception as ex:
             return None
 
@@ -70,8 +70,8 @@ class ApiClient(object):
     def screenshot(self, config=None):
 
         try:
-            url = 'http://{}:{}/api/screenshot'.format(self.host, self.port)
-            response = requests.get(url, headers=self.headers)
+            url = 'https://{}:{}/api/screenshot'.format(self.host, self.port)
+            response = requests.get(url, headers=self.headers, verify=False)
             response = response.json()
         except Exception as ex:
             return None

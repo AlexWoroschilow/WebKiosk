@@ -11,6 +11,7 @@
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 import inject
+import netifaces
 
 
 class Loader(object):
@@ -32,5 +33,6 @@ class Loader(object):
     @inject.params(config='config')
     def __constructor(self, config=None):
         from .gui.webview import KioskWebView
+        from .gui.widget import BrowserContainer
 
-        return KioskWebView()
+        return BrowserContainer(KioskWebView())

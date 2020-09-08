@@ -13,6 +13,7 @@
 import inject
 from PyQt5 import QtCore
 from gevent.pywsgi import WSGIServer
+import os
 
 
 class Server(QtCore.QThread):
@@ -25,11 +26,20 @@ class Server(QtCore.QThread):
 
         try:
 
-            host = config.get('server.host')
-            port = config.get('server.port')
+            host = config.get('server.host', '0.0.0.0')
+            port = config.get('server.port', '52312')
+
+            key = config.get('certificate.key', 'ssl/localhost.key')
+            if not key: raise Exception('Certificate key not found: {}'.format(key))
+            if not os.path.exists(key): raise Exception('Certificate key not found: {}'.format(key))
+
+            crt = config.get('certificate.crt', 'ssl/localhost.crt')
+            if not crt: raise Exception('Certificate not found: {}'.format(key))
+            if not os.path.exists(crt): raise Exception('Certificate not found: {}'.format(key))
 
             http_server = WSGIServer(
-                (host, int(port)), controller
+                (host, int(port)), controller,
+                keyfile=key, certfile=crt
             )
             http_server.serve_forever()
 
