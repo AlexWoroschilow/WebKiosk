@@ -1,0 +1,19 @@
+[Unit]
+Description=Web kiosk
+After=xserver.service network.target
+Wants=xserver.service
+
+[Install]
+WantedBy=multi-user.target
+
+
+[Service]
+User=fitbase
+Group=fitbase
+Type=idle
+Environment="DISPLAY=:0"
+ExecStart=/opt/kiosk/main.py --config=/opt/kiosk/kiosk.conf
+StandardOutput=/var/log/kiosk.log
+StandardError=/var/log/kiosk.err
+Restart=always
+RestartSec=3

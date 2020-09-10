@@ -1,0 +1,16 @@
+[Unit]
+Description=Xserver at the terminal 7
+
+[Install]
+WantedBy=multi-user.target
+
+[Service]
+User=root
+Group=root
+Type=simple
+Restart=always
+Environment="DISPLAY=:0"
+ExecStart=/etc/X11/xinit/xserverrc $DISPLAY vt7
+ExecStartPost=DISPLAY=:0 /usr/bin/xset s off \
+            && DISPLAY=:0 /usr/bin/xset s noblank \
+            && DISPLAY=:0 /usr/bin/xset -dpms

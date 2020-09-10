@@ -1,0 +1,12 @@
+[Unit]
+Description=Xserver at the terminal 7
+
+[Install]
+WantedBy=multi-user.target
+
+
+[Service]
+Type=simple
+ExecStart=/etc/X11/xinit/xserverrc :0 vt7
+Restart=always
+Environment="DISPLAY=:0"

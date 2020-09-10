@@ -1,0 +1,16 @@
+[Unit]
+Description=Web kiosk
+After=xserver.service network.target kiosk.service
+Wants=xserver.service kiosk.service
+
+[Install]
+WantedBy=multi-user.target
+
+[Service]
+User=fitbase
+Group=fitbase
+ExecStart=/usr/bin/x11vnc -display :0
+StandardOutput=/var/log/x11vnc.log
+StandardError=/var/log/x11vnc.err
+Restart=always
+RestartSec=3
