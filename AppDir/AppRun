@@ -1,0 +1,46 @@
+#! /bin/bash
+# Copyright 2020 Alex Woroschilow (alex@ergofox.me)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+FILE=`which "$0"`
+APPDIR=`dirname "${FILE}"`
+
+set -e
+
+PATH=${PATH}:${APPDIR}/python/bin
+export PATH=${PATH}
+
+LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${APPDIR}/python/lib64
+LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${APPDIR}/python/lib
+export LD_LIBRARY_PATH
+
+PYTHONPATH=${PYTHONPATH}:${APPDIR}/python/lib
+PYTHONPATH=${PYTHONPATH}:${APPDIR}/python/lib/python3
+PYTHONPATH=${PYTHONPATH}:${APPDIR}/python/lib/python3/site-packages
+PYTHONPATH=${PYTHONPATH}:${APPDIR}/python/lib/python3/site-packages/PIL
+PYTHONPATH=${PYTHONPATH}:${APPDIR}/python/lib/python3/_import_failed
+PYTHONPATH=${PYTHONPATH}:${APPDIR}/python/lib/python3/lib-dynload
+PYTHONPATH=${PYTHONPATH}:${APPDIR}/python/lib64
+PYTHONPATH=${PYTHONPATH}:${APPDIR}/python/lib64/python3
+PYTHONPATH=${PYTHONPATH}:${APPDIR}/python/lib64/python3/site-packages
+PYTHONPATH=${PYTHONPATH}:${APPDIR}/python/lib64/python3/site-packages/PIL
+PYTHONPATH=${PYTHONPATH}:${APPDIR}/python/lib64/python3/_import_failed
+PYTHONPATH=${PYTHONPATH}:${APPDIR}/python/lib64/python3/lib-dynload
+PYTHONPATH=${PYTHONPATH}:${APPDIR}/vendor
+export PYTHONPATH
+
+ls /etc/ssl/certs/ca-certificates.crt && REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
+ls /etc/pki/tls/certs/ca-bundle.crt && REQUESTS_CA_BUNDLE=/etc/pki/tls/certs/ca-bundle.crt
+export REQUESTS_CA_BUNDLE
+
+
+exec ${APPDIR}/python/bin/python3 $@
+#exec ${APPDIR}/python/bin/python3 ${APPDIR}/application/main.py $@
