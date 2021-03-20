@@ -11,7 +11,7 @@ idna==2.10
 Inject==4.2.0
 IPy==1.0
 itsdangerous==1.1.0
-Jinja2==2.11.2
+Jinja2==2.11.3
 jsonschema==3.2.0
 MarkupSafe==1.1.1
 netifaces==0.10.9
